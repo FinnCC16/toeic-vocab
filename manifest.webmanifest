@@ -1,0 +1,11 @@
+{
+  "name": "TOEIC Vocab｜多益例句學習",
+  "short_name": "TOEIC Vocab",
+  "description": "用例句理解多益單字與片語，並記錄學習進度。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6fb",
+  "theme_color": "#172554"
+}
