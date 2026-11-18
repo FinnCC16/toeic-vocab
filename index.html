@@ -21,6 +21,7 @@ input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:
  <div class="section-title">今天要做的事</div><div class="card"><div class="row"><div><b>📖 開始學習</b><div class="small muted">先讀例句，再猜意思</div></div><button onclick="startLearn()">開始</button></div></div>
  <div class="card"><div class="row"><div><b>🔁 今日複習</b><div class="small muted">優先複習不熟悉的詞條</div></div><button class="btn2" onclick="startReview()">複習</button></div></div>
  <div class="card"><div class="row"><div><b>📝 單字測驗</b><div class="small muted">從已建立例句的詞條出題</div></div><button class="btn2" onclick="startQuiz()">測驗</button></div></div>
+ <div class="card"><div class="row"><div><b>✏️ 句子填空</b><div class="small muted">四選一填入正確英文單字或片語</div></div><button class="btn2" onclick="startCloze()">開始</button></div></div>
  <div class="notice">目前已匯入你的原始詞庫。首批已建立例句與音標的詞條會直接進入學習；其他詞條會保留在詞庫中，並標示「例句待建立」。</div>
  <div class="section-title">詞庫概況</div><div class="card row"><span class="muted">匯入詞條（去除完全重複）</span><b id="totalWords">—</b></div><div class="card row"><span class="muted">已建立例句的詞條</span><b id="readyWords">—</b></div>
 </section>
@@ -30,6 +31,7 @@ input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:
  <div id="answer" class="hide"><div class="term" id="word"></div><div class="row"><span class="muted" id="ipa"></span><button class="btn2" onclick="speakCurrent()">🔊 聽發音</button></div><p class="meaning" id="meaning"></p><p class="muted" id="translation"></p><div class="notice">例句朗讀功能使用裝置內建語音；發音聲線與可用語言依手機或瀏覽器而異。</div><div class="section-title">你對這個詞條熟悉嗎？</div><div class="actions"><button class="btn4" onclick="rate('again')">不會</button><button class="btn2" onclick="rate('hard')">不熟</button><button class="btn3" onclick="rate('known')">會了</button></div></div>
  </div></section>
 <section id="quiz" class="hide"><div class="row"><button class="btn2" onclick="go('home')">← 返回</button><span class="small muted" id="quizCount"></span></div><div class="card"><span class="pill">例句測驗</span><div class="example" id="quizSentence"></div><div id="choices"></div><div id="quizFeedback" class="muted small"></div><button id="nextQuiz" class="hide" style="width:100%;margin-top:12px" onclick="nextQuestion()">下一題</button></div></section>
+<section id="cloze" class="hide"><div class="row"><button class="btn2" onclick="go('home')">← 返回</button><span id="clozeCount" class="small muted"></span></div><div class="card"><span class="pill">句子填空・四選一</span><div class="example" id="clozeSentence"></div><div id="clozeChoices"></div><div id="clozeFeedback" class="small" aria-live="polite"></div><div id="clozeExplanation" class="hide"><p id="clozeMeaning" class="meaning"></p><p id="clozeTranslation" class="muted"></p></div><button id="nextCloze" class="hide" style="width:100%;margin-top:12px" onclick="nextClozeQuestion()">下一題</button></div></section>
 <section id="library" class="hide"><div class="section-title">我的單字庫</div><input id="search" placeholder="搜尋英文單字或片語…" oninput="renderLibrary()"><div class="row" style="margin:12px 0"><span class="small muted" id="libraryCount"></span><select id="filter" style="max-width:145px" onchange="renderLibrary()"><option value="all">全部詞條</option><option value="ready">已有例句</option><option value="pending">待補例句</option><option value="again">不會</option><option value="hard">不熟</option><option value="known">會了</option></select></div><div class="card" id="wordList"></div></section>
 <section id="stats" class="hide"><div class="section-title">學習統計</div><div class="card"><div class="row"><span>已學會</span><b id="sKnown">0</b></div><div class="progress"><i id="knownBar"></i></div><div class="row"><span>不熟</span><b id="sHard">0</b></div><div class="row"><span>不會</span><b id="sAgain">0</b></div><div class="row"><span>尚未評級</span><b id="sNew">0</b></div></div><div class="card"><b>學習資料備份</b><p class="small muted">學習紀錄保存在目前裝置的瀏覽器。建議定期匯出備份。</p><div class="actions"><button class="btn2" onclick="exportData()">匯出備份</button><button class="btn2" onclick="document.getElementById('importFile').click()">匯入備份</button></div><input id="importFile" type="file" accept="application/json" class="hide" onchange="importData(event)"></div><div class="card"><b>每日目標</b><div class="small muted">目前每天 <span id="goalSetting">20</span> 個詞條</div><button class="btn2" style="margin-top:10px" onclick="setGoal()">修改目標</button></div></section>
 </main>
@@ -86,6 +88,52 @@ function startQuiz(){quizQueue=shuffled(WORDS.filter(w=>w.ready)).slice(0,10);if
 function question(){quizLocked=false;$('nextQuiz').classList.add('hide');$('quizFeedback').textContent='';let w=quizQueue[qidx];$('quizCount').textContent=(qidx+1)+' / '+quizQueue.length;$('quizSentence').innerHTML=highlightedSentence(w.example,w.term,w.highlight);let others=shuffled(WORDS.filter(x=>x.ready&&x.term!==w.term)).slice(0,3);let opts=shuffled([w,...others]);$('choices').innerHTML='';opts.forEach(o=>{let b=document.createElement('button');b.className='choice';b.textContent=o.meaning;b.onclick=()=>answerQuiz(b,o.term===w.term,w);$('choices').appendChild(b)})}
 function answerQuiz(btn,ok,w){if(quizLocked)return;quizLocked=true;[...$('choices').children].forEach(b=>{if(b.textContent===w.meaning)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');$('quizFeedback').textContent=ok?'答對了！ '+w.term+' / '+w.ipa:'正確答案：'+w.term+' — '+w.meaning; if(ok){db[w.term]={status:'known',day:today(),due:Date.now()+3*86400000,seen:(db[w.term]?.seen||0)+1};save()}$('nextQuiz').classList.remove('hide');$('nextQuiz').textContent=qidx===quizQueue.length-1?'完成測驗':'下一題'}
 function nextQuestion(){qidx++;if(qidx>=quizQueue.length){alert('測驗完成！');go('home')}else question()}
+let clozeQueue=[],clozeIndex=0,clozeLocked=false,clozeCorrect=0;
+function clozeSpan(w){
+ const plain=String(w.example).split('**').join('');
+ const target=w.highlight||w.term;
+ const at=plain.toLowerCase().indexOf(target.toLowerCase());
+ return at<0?null:{plain,target,at};
+}
+function startCloze(){
+ clozeQueue=shuffled(WORDS.filter(w=>w.ready&&clozeSpan(w))).slice(0,10);
+ if(clozeQueue.length<4){alert('可用的填空題目不足');return}
+ clozeIndex=0;clozeCorrect=0;go('cloze');showClozeQuestion();
+}
+function showClozeQuestion(){
+ clozeLocked=false;
+ const w=clozeQueue[clozeIndex],span=clozeSpan(w);
+ $('clozeCount').textContent=(clozeIndex+1)+' / '+clozeQueue.length+'　答對 '+clozeCorrect;
+ $('clozeSentence').innerHTML=escapeHTML(span.plain.slice(0,span.at))+'<strong>_____</strong>'+escapeHTML(span.plain.slice(span.at+span.target.length));
+ $('clozeFeedback').textContent='';$('clozeExplanation').classList.add('hide');$('nextCloze').classList.add('hide');
+ const other=shuffled(WORDS.filter(x=>x.ready&&x.term!==w.term)).slice(0,3);
+ $('clozeChoices').innerHTML='';
+ shuffled([w,...other]).forEach(opt=>{
+  const btn=document.createElement('button');btn.className='choice';btn.textContent=opt.term;
+  btn.onclick=()=>answerCloze(btn,opt.term===w.term,w,span);
+  $('clozeChoices').appendChild(btn);
+ });
+}
+function answerCloze(btn,correct,w,span){
+ if(clozeLocked)return;
+ clozeLocked=true;if(correct)clozeCorrect++;
+ [...$('clozeChoices').children].forEach(b=>{
+  b.disabled=true;if(b.textContent===w.term)b.classList.add('correct');
+ });
+ if(!correct)btn.classList.add('wrong');
+ $('clozeFeedback').textContent=(correct?'✓ 答對了！':'✗ 答錯了。')+' 正確答案：'+w.term+'（例句形式：'+span.target+'）';
+ $('clozeMeaning').textContent=w.meaning;
+ $('clozeTranslation').textContent=w.translation;
+ $('clozeExplanation').classList.remove('hide');
+ $('nextCloze').textContent=clozeIndex===clozeQueue.length-1?'查看成績':'下一題';
+ $('nextCloze').classList.remove('hide');
+ $('clozeCount').textContent=(clozeIndex+1)+' / '+clozeQueue.length+'　答對 '+clozeCorrect;
+}
+function nextClozeQuestion(){
+ clozeIndex++;
+ if(clozeIndex>=clozeQueue.length){alert('句子填空完成！答對 '+clozeCorrect+' / '+clozeQueue.length+' 題');go('home')}
+ else showClozeQuestion();
+}
 function renderLibrary(){let q=$('search').value.toLowerCase(),f=$('filter').value;let arr=WORDS.filter(w=>(w.term.toLowerCase().includes(q)||w.meaning.toLowerCase().includes(q))&&(f==='all'||(f==='ready'&&w.ready)||(f==='pending'&&!w.ready)||status(w.term)===f));$('libraryCount').textContent=arr.length+' 個詞條';$('wordList').innerHTML='';arr.slice(0,250).forEach(w=>{let d=document.createElement('div');d.className='wordrow';let left=document.createElement('div');left.innerHTML='<b></b><div class="tag"></div>';left.children[0].textContent=w.term;left.children[1].textContent=w.ready?(w.meaning+' · '+(status(w.term)==='new'?'未評級':status(w.term))):'例句待建立 · '+(status(w.term)==='new'?'未評級':status(w.term));let b=document.createElement('button');b.className='btn2';b.textContent=w.ready?'查看':'待補';b.disabled=!w.ready;b.onclick=()=>{current=w;go('learn');$('learnProgress').textContent='詞庫檢視';showDirect(w)};d.append(left,b);$('wordList').append(d)})}
 function showDirect(w){$('sentence').innerHTML=highlightedSentence(w.example,w.term,w.highlight);$('word').textContent=w.term;$('ipa').textContent=w.ipa?' /'+w.ipa+'/':'音標待補';$('meaning').textContent=w.meaning;$('translation').textContent=w.translation;$('answer').classList.remove('hide')}
 function exportData(){let blob=new Blob([JSON.stringify({progress:db,goal},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='toeic-vocab-backup.json';a.click();URL.revokeObjectURL(a.href)}
