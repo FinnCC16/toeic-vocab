@@ -70,7 +70,7 @@ function go(p){document.querySelectorAll('main section').forEach(s=>s.classList.
 function setGoal(){let n=prompt('請輸入每日學習詞條數',goal);if(n!==null&&Number(n)>0){goal=Math.min(300,Math.floor(Number(n)));localStorage.setItem('toeic_goal',goal);refresh()}}
 function escapeHTML(value){return String(value).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));}
 function highlightedSentence(sentence,term,highlight){
- const plain=String(sentence).replace(/\\*\\*/g,'');
+ const plain=String(sentence).split('**').join('');
  const target=highlight||term;
  const at=plain.toLowerCase().indexOf(String(target).toLowerCase());
  if(at<0)return escapeHTML(plain);
